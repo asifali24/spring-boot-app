@@ -8,8 +8,10 @@ import com.learn.learnRESTAPI.service.StudentServices;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.cfg.MapperBuilder;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor // create the constuctor with required variables
@@ -47,5 +49,40 @@ public class StudentServicesImpl implements StudentServices {
         return modelMapper.map(student,StudentDto.class);
     }
 
+    @Override
+    public void deleteStudentById(Long id) {
+        if(!studentRepo.existsById(id)) throw new IllegalArgumentException("Student does not exist with "+id);
+        studentRepo.deleteById(id);
+    }
 
+    @Override
+    public StudentDto putStudent(AddStudentDto putStudent, Long id) {
+        Student student = studentRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found by id "+id));
+
+        modelMapper.map(putStudent, student);
+        student = studentRepo.save(student);
+        return modelMapper.map(student ,StudentDto.class);
+    }
+
+    @Override
+    public StudentDto updatePartialStudent(Long id, Map<String, String> updateBody) {
+        Student student = studentRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found by id "+id));
+
+        updateBody.forEach((k,v) ->{
+            switch (k){
+                case "name":
+                    student.setName((String) v);
+                    break;
+                case "email":
+                    student.setEmail((String) v);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Invalid key "+k);
+            }
+        });
+        Student savedStudent = studentRepo.save(student);
+        return modelMapper.map(savedStudent, StudentDto.class );
+    }
 }
